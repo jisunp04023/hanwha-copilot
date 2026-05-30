@@ -8,12 +8,164 @@ import re
 # ──────────────────────────────────────────
 # 설정
 # ──────────────────────────────────────────
-API_KEY = "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"
+import os
+API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 DB_PATH = "hanwha_copilot.db"
 
 client = anthropic.Anthropic(api_key=API_KEY)
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 
+def init_db(conn):
+    conn.execute("DROP TABLE IF EXISTS CUS_CTM")
+    conn.execute("DROP TABLE IF EXISTS M_BIZ_MTHY_PS_CR")
+    conn.execute("DROP TABLE IF EXISTS M_ORG_MTHY_BZ_ORGN")
+    conn.execute("DROP TABLE IF EXISTS SAM_STF")
+
+    conn.execute("""
+    CREATE TABLE CUS_CTM (
+        CTMNO    TEXT PRIMARY KEY,
+        GNDR     TEXT,
+        BRTHYR   INTEGER,
+        ADDR     TEXT,
+        JBCD     TEXT,
+        INCMGRD  TEXT
+    )""")
+
+    conn.execute("""
+    CREATE TABLE M_BIZ_MTHY_PS_CR (
+        CLS_YYMM        TEXT,
+        PLYNO           TEXT,
+        CRT_CTMNO       TEXT,
+        MN_NRDPS_CTMNO  TEXT,
+        GDNM            TEXT,
+        GD_FLGCD        TEXT,
+        IKD_GRPCD       TEXT,
+        CHNL_FLGCD      TEXT,
+        INS_ST          TEXT,
+        INS_ND          TEXT,
+        DH_STFNO        TEXT,
+        CE_STFNO        TEXT,
+        PRIMARY KEY (CLS_YYMM, PLYNO)
+    )""")
+
+    conn.execute("""
+    CREATE TABLE M_ORG_MTHY_BZ_ORGN (
+        CLS_YYMM  TEXT,
+        STFNO     TEXT,
+        HDQNM     TEXT,
+        BRNM      TEXT,
+        BZP_NM    TEXT,
+        PRIMARY KEY (CLS_YYMM, STFNO)
+    )""")
+
+    conn.execute("""
+    CREATE TABLE SAM_STF (
+        STFNO   TEXT PRIMARY KEY,
+        GNDR    TEXT,
+        BRTHYR  INTEGER
+    )""")
+
+    import random
+    random.seed(42)
+
+    ADDR_LIST  = ["서울", "경기", "부산", "인천", "대구", "대전", "광주", "울산", "기타"]
+    JB_LIST    = ["JB01", "JB02", "JB03", "JB04", "JB05"]
+    INCM_LIST  = ["H", "M", "L"]
+    CHNL_LIST  = ["GA", "TM", "CM", "BK", "CP"]
+    IKD_LIST   = ["L", "A", "G"]
+    GD_FLG_MAP = {
+        "L": ["LF01","LF02","LF03","LF04"],
+        "A": ["AF01","AF02"],
+        "G": ["GF01","GF02"],
+    }
+    GD_NM_MAP = {
+        "LF01": ["한화암보험","한화암케어"],
+        "LF02": ["한화건강보험","한화통합건강"],
+        "LF03": ["한화실손보험","한화실손3세대"],
+        "LF04": ["한화치아보험"],
+        "AF01": ["한화개인자동차","한화다이렉트자동차"],
+        "AF02": ["한화업무용자동차"],
+        "GF01": ["한화주택화재","한화일반화재"],
+        "GF02": ["한화여행보험"],
+    }
+    HQ_LIST  = ["서울본부","경기본부","영남본부","호남본부"]
+    BRN_MAP  = {
+        "서울본부": ["강남사업단","강북사업단","서초사업단"],
+        "경기본부": ["수원사업단","성남사업단"],
+        "영남본부": ["부산사업단","대구사업단"],
+        "호남본부": ["광주사업단","전주사업단"],
+    }
+    BZP_MAP  = {
+        "강남사업단": ["강남지점","역삼지점","삼성지점"],
+        "강북사업단": ["종로지점","마포지점"],
+        "서초사업단": ["서초지점","방배지점"],
+        "수원사업단": ["수원지점","영통지점"],
+        "성남사업단": ["분당지점","판교지점"],
+        "부산사업단": ["부산지점","해운대지점"],
+        "대구사업단": ["대구지점","수성지점"],
+        "광주사업단": ["광주지점","전남지점"],
+        "전주사업단": ["전주지점","익산지점"],
+    }
+    YM_LIST = [f"{y}{m:02d}" for y in [2023,2024] for m in range(1,13)]
+
+    # SAM_STF
+    staff_list = [(f"STF{i:04d}", random.choice(["M","F"]), random.randint(1970,1998))
+                  for i in range(1,201)]
+    conn.executemany("INSERT INTO SAM_STF VALUES (?,?,?)", staff_list)
+
+    # CUS_CTM
+    customer_list = [(f"CTM{i:06d}", random.choice(["M","F"]),
+                      random.randint(1950,2000), random.choice(ADDR_LIST),
+                      random.choice(JB_LIST), random.choice(INCM_LIST))
+                     for i in range(1,3001)]
+    conn.executemany("INSERT INTO CUS_CTM VALUES (?,?,?,?,?,?)", customer_list)
+
+    # M_ORG_MTHY_BZ_ORGN
+    stf_ids  = [s[0] for s in staff_list]
+    stf_org  = {}
+    for stf in stf_ids:
+        hq  = random.choice(HQ_LIST)
+        brn = random.choice(BRN_MAP[hq])
+        bzp = random.choice(BZP_MAP[brn])
+        stf_org[stf] = (hq, brn, bzp)
+    org_list = [(ym, stf, *stf_org[stf]) for ym in YM_LIST for stf in stf_ids]
+    conn.executemany("INSERT INTO M_ORG_MTHY_BZ_ORGN VALUES (?,?,?,?,?)", org_list)
+
+    # M_BIZ_MTHY_PS_CR
+    contract_pool = []
+    for i in range(1, 2001):
+        ikd    = random.choice(IKD_LIST)
+        gd_flg = random.choice(GD_FLG_MAP[ikd])
+        gdnm   = random.choice(GD_NM_MAP[gd_flg])
+        chnl   = random.choice(CHNL_LIST)
+        crt    = f"CTM{random.randint(1,3000):06d}"
+        mrd    = crt if random.random() < 0.7 else f"CTM{random.randint(1,3000):06d}"
+        dh     = random.choice(stf_ids)
+        ce     = random.choice(stf_ids)
+        sy     = random.randint(2022,2024)
+        sm     = random.randint(1,12)
+        ey     = sy + random.randint(1,5)
+        contract_pool.append({
+            "PLYNO": f"PLY{i:07d}", "IKD": ikd, "GD_FLG": gd_flg,
+            "GDNM": gdnm, "CHNL": chnl, "CRT": crt, "MRD": mrd,
+            "DH": dh, "CE": ce,
+            "INS_ST": f"{sy}{sm:02d}01", "INS_ND": f"{ey}{sm:02d}01",
+            "ACT_ST": f"{sy}{sm:02d}", "ACT_ND": f"{ey}{sm:02d}",
+        })
+
+    monthly_rows = [
+        (ym, c["PLYNO"], c["CRT"], c["MRD"], c["GDNM"], c["GD_FLG"],
+         c["IKD"], c["CHNL"], c["INS_ST"], c["INS_ND"], c["DH"], c["CE"])
+        for ym in YM_LIST for c in contract_pool
+        if c["ACT_ST"] <= ym < c["ACT_ND"]
+    ]
+    conn.executemany("INSERT OR IGNORE INTO M_BIZ_MTHY_PS_CR VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", monthly_rows)
+    conn.commit()
+
+# DB 초기화 (테이블 없으면 생성)
+if conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0] == 0:
+    init_db(conn)
+       
 # ──────────────────────────────────────────
 # 시스템 프롬프트
 # ──────────────────────────────────────────
