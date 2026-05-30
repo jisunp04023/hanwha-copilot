@@ -1,0 +1,5 @@
+hanwha_copilot.db
+*.db
+.env
+__pycache__/
+*.pyc
