@@ -692,9 +692,9 @@ if analyze_btn and question:
     st.caption(f"💡 {explanation}")
 
     with st.container():
-    st.caption("🔍 생성된 SQL")
-    st.code(sql, language="sql")
-tab1, tab2, tab3, tab4 = st.tabs(["📋 데이터 테이블", "📈 차트", "🤖 AI 인사이트", "📝 임원 보고 초안"])
+        st.caption("🔍 생성된 SQL")
+        st.code(sql, language="sql")
+    tab1, tab2, tab3, tab4 = st.tabs(["📋 데이터 테이블", "📈 차트", "🤖 AI 인사이트", "📝 임원 보고 초안"])
 
     with tab1:
         st.dataframe(df, use_container_width=True)
