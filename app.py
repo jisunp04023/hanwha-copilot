@@ -638,6 +638,36 @@ st.markdown("""
         border-color: #F37321 !important;
         box-shadow: 0 0 0 2px rgba(243,115,33,0.15) !important;
     }
+    
+    /* 다크모드 대응 */
+    .stMarkdown, .stText, .stCaption, 
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li {
+        color: #1A1A1A !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .stMarkdown, .stText, .stCaption,
+        [data-testid="stMarkdownContainer"] p,
+        [data-testid="stMarkdownContainer"] li {
+            color: #F9FAFB !important;
+        }
+        .kpi-card {
+            background: #1F2937 !important;
+            border-color: #374151 !important;
+        }
+        .kpi-value { color: #F9FAFB !important; }
+        .kpi-label, .kpi-sub { color: #9CA3AF !important; }
+        .hypothesis-card {
+            background: #292524 !important;
+            border-color: #92400E !important;
+        }
+        .report-box {
+            background: #1F2937 !important;
+            border-color: #374151 !important;
+            color: #F9FAFB !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
