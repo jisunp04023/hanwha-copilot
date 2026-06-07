@@ -13,7 +13,7 @@ from PIL import Image
 import streamlit as st
 
 API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-DB_PATH = "/tmp/hanwha_copilot.db"
+DB_PATH = "/tmp/hanwha_copilot.db" if os.path.exists("/tmp") else "hanwha_copilot.db"
 
 client = anthropic.Anthropic(api_key=API_KEY)
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -408,7 +408,14 @@ def ask_to_sql(question):
     )
     raw = response.content[0].text.strip()
     raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("```").strip()
-    return json.loads(raw)
+    result = json.loads(raw)
+    # SQL 줄바꿈 정리
+    sql = result["sql"]
+    keywords = ["SELECT","FROM","WHERE","GROUP BY","ORDER BY","HAVING","LEFT JOIN","JOIN","WITH","LIMIT","AND","OR"]
+    for kw in keywords:
+        sql = sql.replace(f" {kw} ", f"\n{kw} ")
+    result["sql"] = sql
+    return result
 
 def run_sql(sql):
     try:
@@ -680,8 +687,7 @@ if analyze_btn and question:
 
     with st.expander("생성된 SQL 보기"):
         st.code(sql, language="sql")
-
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 데이터 테이블", "📈 차트", "🤖 AI 인사이트", "📝 임원 보고 초안"])
+    tab1, tab2, tab3, tab4 = st.tabs(["데이터 테이블", "차트", "AI 인사이트", "임원 보고 초안"])
 
     with tab1:
         st.dataframe(df, use_container_width=True)
