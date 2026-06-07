@@ -13,7 +13,7 @@ from PIL import Image
 import streamlit as st
 
 API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-DB_PATH = "hanwha_copilot.db"
+DB_PATH = "/tmp/hanwha_copilot.db"
 
 client = anthropic.Anthropic(api_key=API_KEY)
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -198,9 +198,6 @@ def init_db(conn):
 if conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0] == 0:
     with st.spinner("데이터 초기화 중... (최초 1회, 약 1분 소요)"):
         init_db(conn)
-        
-        
-        
 
 # ──────────────────────────────────────────
 # 시스템 프롬프트 v2
