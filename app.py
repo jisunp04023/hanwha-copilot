@@ -596,6 +596,18 @@ st.markdown("""
         color: #E06010 !important;
     }
 
+    @media (prefers-color-scheme: dark) {
+        div[data-testid="column"] .stButton > button {
+            background: #1F2937 !important;
+            color: #F37321 !important;
+            border: 1.5px solid #F37321 !important;
+        }
+        div[data-testid="column"] .stButton > button:hover {
+            background: #292524 !important;
+            color: #F89B6C !important;
+        }
+    }
+
     /* 다운로드 버튼 - 회색 계열 */
     .stDownloadButton > button {
         background: #F3F4F6 !important;
