@@ -374,7 +374,7 @@ ORDER BY CLS_YYMM, 신계약고객수 DESC;
 === 응답 형식 ===
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요.
 {
-  "sql": "실행할 SQL",
+  "sql": "실행할 SQL (각 주요 절마다 -- 주석으로 설명 추가. 예: -- 장기 보유고객 월별 집계)",
   "explanation": "이 쿼리가 무엇을 조회하는지 1~2문장 설명"
 }
 """
@@ -400,6 +400,7 @@ SQL 쿼리 결과를 바탕으로 원인을 분석하고 임원 보고 수준의
 # 함수
 # ──────────────────────────────────────────
 def ask_to_sql(question):
+    import sqlparse
     response = client.messages.create(
         model="claude-sonnet-4-5",
         max_tokens=1000,
@@ -409,12 +410,13 @@ def ask_to_sql(question):
     raw = response.content[0].text.strip()
     raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("```").strip()
     result = json.loads(raw)
-    # SQL 줄바꿈 정리
-    sql = result["sql"]
-    keywords = ["SELECT","FROM","WHERE","GROUP BY","ORDER BY","HAVING","LEFT JOIN","JOIN","WITH","LIMIT","AND","OR"]
-    for kw in keywords:
-        sql = sql.replace(f" {kw} ", f"\n{kw} ")
-    result["sql"] = sql
+    # SQL 포맷팅
+    result["sql"] = sqlparse.format(
+        result["sql"],
+        reindent=True,
+        keyword_case='upper',
+        indent_width=4
+    )
     return result
 
 def run_sql(sql):
