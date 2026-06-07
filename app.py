@@ -598,7 +598,7 @@ st.markdown("""
 
     @media (prefers-color-scheme: dark) {
         div[data-testid="column"] .stButton > button {
-            background: #1F2937 !important;
+            background: transparent !important;
             color: #F37321 !important;
             border: 1.5px solid #F37321 !important;
         }
