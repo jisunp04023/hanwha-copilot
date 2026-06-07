@@ -516,6 +516,7 @@ st.markdown("""
 <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; }
+    summary { font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; }
 
     .stApp { background-color: #FAFAFA; }
 
@@ -687,7 +688,7 @@ if analyze_btn and question:
 
     with st.expander("생성된 SQL 보기"):
         st.code(sql, language="sql")
-    tab1, tab2, tab3, tab4 = st.tabs(["데이터 테이블", "차트", "AI 인사이트", "임원 보고 초안"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📋 데이터 테이블", "📈 차트", "🤖 AI 인사이트", "📝 임원 보고 초안"])
 
     with tab1:
         st.dataframe(df, use_container_width=True)
