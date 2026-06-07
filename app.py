@@ -691,9 +691,10 @@ if analyze_btn and question:
     st.markdown('<div class="section-header">📊 분석 결과</div>', unsafe_allow_html=True)
     st.caption(f"💡 {explanation}")
 
-    with st.expander("생성된 SQL 보기"):
-        st.code(sql, language="sql")
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 데이터 테이블", "📈 차트", "🤖 AI 인사이트", "📝 임원 보고 초안"])
+    with st.container():
+    st.caption("🔍 생성된 SQL")
+    st.code(sql, language="sql")
+tab1, tab2, tab3, tab4 = st.tabs(["📋 데이터 테이블", "📈 차트", "🤖 AI 인사이트", "📝 임원 보고 초안"])
 
     with tab1:
         st.dataframe(df, use_container_width=True)
