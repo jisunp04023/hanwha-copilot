@@ -596,16 +596,18 @@ st.markdown("""
         color: #E06010 !important;
     }
 
-    @media (prefers-color-scheme: dark) {
-        div[data-testid="column"] .stButton > button {
-            background: transparent !important;
-            color: #F37321 !important;
-            border: 1.5px solid #F37321 !important;
-        }
-        div[data-testid="column"] .stButton > button:hover {
-            background: #292524 !important;
-            color: #F89B6C !important;
-        }
+    div[data-testid="column"] .stButton > button {
+        background: transparent !important;
+        color: #F37321 !important;
+        border: 1.5px solid #F37321 !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        width: 100% !important;
+    }
+    div[data-testid="column"] .stButton > button:hover {
+        background: #FEF3EC !important;
+        color: #E06010 !important;
     }
 
     /* 다운로드 버튼 - 회색 계열 */
