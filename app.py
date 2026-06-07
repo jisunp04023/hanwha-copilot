@@ -568,15 +568,46 @@ st.markdown("""
         color: #1A1A1A;
     }
 
-    .stButton > button {
+    /* 분석하기 버튼 - 오렌지 채움 (주요 액션) */
+    .stButton > button[kind="primary"] {
         background: #F37321 !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
-        font-weight: 500 !important;
-        padding: 8px 20px !important;
+        font-weight: 600 !important;
+        padding: 10px 24px !important;
     }
-    .stButton > button:hover { background: #E06010 !important; }
+    .stButton > button[kind="primary"]:hover {
+        background: #E06010 !important;
+    }
+
+    /* 예시 질문 버튼 - 오렌지 테두리 흰 배경 */
+    div[data-testid="column"] .stButton > button {
+        background: white !important;
+        color: #F37321 !important;
+        border: 1.5px solid #F37321 !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        width: 100% !important;
+    }
+    div[data-testid="column"] .stButton > button:hover {
+        background: #FEF3EC !important;
+        color: #E06010 !important;
+    }
+
+    /* 다운로드 버튼 - 회색 계열 */
+    .stDownloadButton > button {
+        background: #F3F4F6 !important;
+        color: #374151 !important;
+        border: 1px solid #D1D5DB !important;
+        border-radius: 8px !important;
+        font-weight: 400 !important;
+    }
+    .stDownloadButton > button:hover {
+        background: #E5E7EB !important;
+        color: #111827 !important;
+    }
 
     div[data-testid="column"] .stButton > button {
         background: white !important;
