@@ -1,3 +1,7 @@
 anthropic
 streamlit
-pandaspython-dotenv 
+pandas
+python-dotenv
+plotly
+openpyxl
+Pillow
