@@ -513,12 +513,16 @@ st.set_page_config(
 )
 
 st.markdown("""
-<style>
-    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-body, p, div, span, h1, h2, h3, h4, input, button, td, th {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important;
-}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+""", unsafe_allow_html=True)
 
+st.markdown("""
+<style>
+    
+    body, p, div, span, h1, h2, h3, h4, input, button, td, th {
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
     .stApp { background-color: #FAFAFA; }
 
     .section-header {
