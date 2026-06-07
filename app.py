@@ -515,8 +515,9 @@ st.set_page_config(
 st.markdown("""
 <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-    * { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; }
-    summary { font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; }
+body, p, div, span, h1, h2, h3, h4, input, button, td, th {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
 
     .stApp { background-color: #FAFAFA; }
 
