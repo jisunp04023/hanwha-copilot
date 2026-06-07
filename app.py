@@ -18,6 +18,190 @@ DB_PATH = "hanwha_copilot.db"
 client = anthropic.Anthropic(api_key=API_KEY)
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 
+
+def init_db(conn):
+    conn.executescript("""
+    CREATE TABLE IF NOT EXISTS CUS_CTM (
+        CTMNO TEXT PRIMARY KEY, GNDR TEXT, BRTHYR INTEGER,
+        ADDR TEXT, JOB_GRP TEXT, ESTM_INCM INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS M_BIZ_MTHY_PS_CR (
+        CLS_YYMM TEXT, PLYNO TEXT, CRT_CTMNO TEXT, MN_NRDPS_CTMNO TEXT,
+        GDNM TEXT, GD_FLGCD TEXT, IKD_GRPCD TEXT, CHNL_FLGCD TEXT,
+        INS_ST TEXT, INS_ND TEXT, DH_STFNO TEXT, CE_STFNO TEXT,
+        PRIMARY KEY (CLS_YYMM, PLYNO)
+    );
+    CREATE TABLE IF NOT EXISTS M_ORG_MTHY_BZ_ORGN (
+        CLS_YYMM TEXT, STFNO TEXT, HDQNM TEXT, BRNM TEXT, BZP_NM TEXT,
+        PRIMARY KEY (CLS_YYMM, STFNO)
+    );
+    CREATE TABLE IF NOT EXISTS SAM_STF (
+        STFNO TEXT PRIMARY KEY, GNDR TEXT, BRTHYR INTEGER
+    );
+    """)
+
+    import random
+    random.seed(42)
+
+    ADDR_LIST = ["수도권","영남권","호남권","충청권","강원권","제주"]
+    ADDR_W    = [0.50,0.22,0.12,0.10,0.04,0.02]
+    JOB_LIST  = ["화이트","블루","자영업","주부","전문직"]
+    JOB_W     = [0.30,0.25,0.20,0.15,0.10]
+    CHNL_WEIGHT = {
+        "2023": {"전속":0.32,"GA":0.59,"교차":0.04,"TM":0.08,"CM":0.01},
+        "2024": {"전속":0.27,"GA":0.64,"교차":0.04,"TM":0.07,"CM":0.01},
+        "2025": {"전속":0.23,"GA":0.68,"교차":0.04,"TM":0.06,"CM":0.01},
+        "2026": {"전속":0.21,"GA":0.71,"교차":0.03,"TM":0.04,"CM":0.01},
+    }
+    LA_INFO = {
+        "LA01":{"names":["한화 종합보험","한화 참좋은 종합보험"],"w":0.41},
+        "LA02":{"names":["한화 운전자보험","한화 참좋은 운전자보험"],"w":0.17},
+        "LA03":{"names":["한화 더 경증 간편건강보험","한화 더 경증 간편건강보험Ⅱ"],"w":0.08},
+        "LA04":{"names":["한화 자녀보험"],"w":0.08},
+        "LA05":{"names":["한화 간병보험"],"w":0.06},
+        "LA06":{"names":["한화 실손보험"],"w":0.05},
+        "LA07":{"names":["한화 상해보험"],"w":0.04},
+        "LA08":{"names":["한화 재물보험"],"w":0.04},
+        "LA09":{"names":["한화 암보험"],"w":0.03},
+        "LA10":{"names":["한화 치아보험"],"w":0.02},
+        "LA11":{"names":["한화 연금저축보험"],"w":0.01},
+        "LA12":{"names":["한화 기타보험"],"w":0.01},
+    }
+    SIG_PRODUCTS = {
+        "LA01": {"202307":["한화 시그니처 여성보험 1.0"],"202401":["한화 시그니처 여성보험 2.0"],"202411":["한화 시그니처 여성보험 3.0"],"202601":["한화 시그니처 여성보험 4.0"]},
+        "LA02": {"202401":["한화 시그니처 여성 운전자상해보험"]},
+        "LA03": {"202401":["한화 시그니처 여성 3N5 간편건강보험 2.0","한화 시그니처 여성 355 간편건강보험 2.0"],"202411":["한화 시그니처 여성 3N5 간편건강보험 3.0","한화 시그니처 여성 355 간편건강보험 3.0"]},
+    }
+    HQ_LIST = ["서울본부","경기본부","영남본부","호남본부"]
+    BRN_MAP = {"서울본부":["강남사업단","강북사업단","서초사업단"],"경기본부":["수원사업단","성남사업단"],"영남본부":["부산사업단","대구사업단"],"호남본부":["광주사업단","전주사업단"]}
+    BZP_MAP = {"강남사업단":["강남지점","역삼지점","삼성지점"],"강북사업단":["종로지점","마포지점"],"서초사업단":["서초지점","방배지점"],"수원사업단":["수원지점","영통지점"],"성남사업단":["분당지점","판교지점"],"부산사업단":["부산지점","해운대지점"],"대구사업단":["대구지점","수성지점"],"광주사업단":["광주지점","전남지점"],"전주사업단":["전주지점","익산지점"]}
+    YM_LIST = [f"2023{m:02d}" for m in range(1,13)] + [f"2024{m:02d}" for m in range(1,13)] + [f"2025{m:02d}" for m in range(1,13)] + [f"2026{m:02d}" for m in range(1,5)]
+
+    staff_list = [(f"STF{i:04d}", random.choice(["M","F"]), random.randint(1970,1998)) for i in range(1,201)]
+    conn.executemany("INSERT OR IGNORE INTO SAM_STF VALUES (?,?,?)", staff_list)
+    stf_ids = [s[0] for s in staff_list]
+
+    stf_org = {}
+    for stf in stf_ids:
+        hq=random.choice(HQ_LIST); brn=random.choice(BRN_MAP[hq]); bzp=random.choice(BZP_MAP[brn])
+        stf_org[stf]=(hq,brn,bzp)
+    org_rows=[(ym,stf,*stf_org[stf]) for ym in YM_LIST for stf in stf_ids]
+    conn.executemany("INSERT OR IGNORE INTO M_ORG_MTHY_BZ_ORGN VALUES (?,?,?,?,?)", org_rows)
+
+    N_CTM = 50000
+    customer_rows = []
+    for i in range(1, N_CTM+1):
+        t = random.choices(["low","mid","high","vhigh"],[30,40,25,5])[0]
+        incm = {"low":random.randint(500,2999),"mid":random.randint(3000,4999),"high":random.randint(5000,9999),"vhigh":random.randint(10000,30000)}[t]
+        customer_rows.append((f"CTM{i:07d}", random.choice(["M","F"]), random.randint(1945,2003), random.choices(ADDR_LIST,weights=ADDR_W)[0], random.choices(JOB_LIST,weights=JOB_W)[0], incm))
+    conn.executemany("INSERT OR IGNORE INTO CUS_CTM VALUES (?,?,?,?,?,?)", customer_rows)
+
+    cust_dict   = {r[0]:{"gndr":r[1]} for r in customer_rows}
+    female_pool = [r[0] for r in customer_rows if r[1]=="F"]
+    male_pool   = [r[0] for r in customer_rows if r[1]=="M"]
+
+    def get_chnl(ym):
+        wd=CHNL_WEIGHT.get(ym[:4],CHNL_WEIGHT["2026"])
+        return random.choices(list(wd.keys()),weights=list(wd.values()))[0]
+
+    def get_sig_name(ym, gd_flg):
+        if gd_flg not in SIG_PRODUCTS: return None
+        avail=[]
+        for launch_ym,names in SIG_PRODUCTS[gd_flg].items():
+            if launch_ym<=ym: avail=names
+        return random.choice(avail) if avail else None
+
+    def get_la_gd_and_name(ym, gndr):
+        codes=list(LA_INFO.keys()); weights=[LA_INFO[c]["w"] for c in codes]
+        if ym>="202501":
+            weights=[w*0.45 for w in weights]; weights[codes.index("LA03")]=0.40
+        if gndr=="F":
+            boost={}
+            if ym>="202307": boost={"LA01":0.06,"LA02":0.04}
+            if ym>="202401": boost={"LA01":0.10,"LA02":0.07,"LA03":0.06}
+            if ym>="202411": boost={"LA01":0.13,"LA02":0.09,"LA03":0.09}
+            if ym>="202601": boost={"LA01":0.16,"LA02":0.11,"LA03":0.11}
+            for c,b in boost.items(): weights[codes.index(c)]+=b
+        total=sum(weights); weights=[w/total for w in weights]
+        gd_flg=random.choices(codes,weights=weights)[0]
+        if gndr=="F" and gd_flg in ["LA01","LA02","LA03"]:
+            sig=get_sig_name(ym,gd_flg)
+            if sig: return gd_flg,sig
+        return gd_flg, random.choice(LA_INFO[gd_flg]["names"])
+
+    def target_female_ratio(ym):
+        if ym<"202307": return 0.50
+        if ym<"202401": return 0.53
+        if ym<"202411": return 0.55
+        if ym<"202501": return 0.58
+        if ym<"202601": return 0.57
+        return 0.62
+
+    random.seed(42)
+    N_LA,N_CA,N_FA = 60000,12000,2000
+    contract_pool=[]; ply_idx=1
+
+    la_months=[f"{y}{m:02d}" for y in [2021,2022,2023,2024,2025,2026] for m in range(1,13)]
+    la_months=[ym for ym in la_months if ym<="202604"]
+    la_per_month={}
+    for i in range(N_LA):
+        ym=la_months[i%len(la_months)]; la_per_month[ym]=la_per_month.get(ym,0)+1
+
+    for ym,n in sorted(la_per_month.items()):
+        if n==0: continue
+        target_f=target_female_ratio(ym)
+        n_female=round(n*target_f); n_male=n-n_female
+        female_picks=random.choices(female_pool,k=n_female)
+        male_picks=random.choices(male_pool,k=n_male)
+        all_picks=female_picks+male_picks; random.shuffle(all_picks)
+        sy=int(ym[:4]); sm=int(ym[4:])
+        for crt in all_picks:
+            gndr=cust_dict[crt]["gndr"]
+            gd_flg,gdnm=get_la_gd_and_name(ym,gndr)
+            mrd=crt if random.random()<0.7 else random.choice(female_pool if gndr=="F" else male_pool)
+            ey=sy+random.randint(3,10); chnl=get_chnl(ym)
+            contract_pool.append({"PLYNO":f"PLY{ply_idx:08d}","IKD":"LA","GD_FLG":gd_flg,"GDNM":gdnm,"CHNL":chnl,"CRT":crt,"MRD":mrd,"DH":random.choice(stf_ids),"CE":random.choice(stf_ids),"INS_ST":f"{sy}{sm:02d}01","INS_ND":f"{ey}{sm:02d}01","ACT_ST":f"{sy}{sm:02d}","ACT_ND":f"{ey}{sm:02d}"})
+            ply_idx+=1
+
+    for _ in range(N_CA):
+        sy=random.randint(2021,2026); sm=random.randint(1,12)
+        if sy==2026: sm=random.randint(1,4)
+        ym=f"{sy}{sm:02d}"; chnl=get_chnl(ym)
+        crt=random.choice(male_pool) if random.random()<0.65 else random.choice(female_pool)
+        mrd=f"CTM{random.randint(1,N_CTM):07d}"
+        gd_flg=random.choices(["CA01","CA02"],[0.85,0.15])[0]
+        gdnm=random.choice(["한화 개인용자동차보험","한화 다이렉트 자동차보험"] if gd_flg=="CA01" else ["한화 업무용자동차보험"])
+        ey=sy+random.randint(1,3)
+        contract_pool.append({"PLYNO":f"PLY{ply_idx:08d}","IKD":"CA","GD_FLG":gd_flg,"GDNM":gdnm,"CHNL":chnl,"CRT":crt,"MRD":mrd,"DH":random.choice(stf_ids),"CE":random.choice(stf_ids),"INS_ST":f"{sy}{sm:02d}01","INS_ND":f"{ey}{sm:02d}01","ACT_ST":f"{sy}{sm:02d}","ACT_ND":f"{ey}{sm:02d}"})
+        ply_idx+=1
+
+    for _ in range(N_FA):
+        sy=random.randint(2021,2026); sm=random.randint(1,12)
+        if sy==2026: sm=random.randint(1,4)
+        ym=f"{sy}{sm:02d}"; chnl=get_chnl(ym)
+        crt=f"CTM{random.randint(1,N_CTM):07d}"
+        gd_flg=random.choices(["FA01","FA02"],[0.70,0.30])[0]
+        gdnm=random.choice(["한화 주택화재보험","한화 일반화재보험"] if gd_flg=="FA01" else ["한화 여행보험"])
+        ey=sy+random.randint(1,5)
+        contract_pool.append({"PLYNO":f"PLY{ply_idx:08d}","IKD":"FA","GD_FLG":gd_flg,"GDNM":gdnm,"CHNL":chnl,"CRT":crt,"MRD":crt,"DH":random.choice(stf_ids),"CE":random.choice(stf_ids),"INS_ST":f"{sy}{sm:02d}01","INS_ND":f"{ey}{sm:02d}01","ACT_ST":f"{sy}{sm:02d}","ACT_ND":f"{ey}{sm:02d}"})
+        ply_idx+=1
+
+    monthly_rows=[]
+    for ym in YM_LIST:
+        for c in contract_pool:
+            if c["ACT_ST"]<=ym<c["ACT_ND"]:
+                monthly_rows.append((ym,c["PLYNO"],c["CRT"],c["MRD"],c["GDNM"],c["GD_FLG"],c["IKD"],c["CHNL"],c["INS_ST"],c["INS_ND"],c["DH"],c["CE"]))
+    conn.executemany("INSERT OR IGNORE INTO M_BIZ_MTHY_PS_CR VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", monthly_rows)
+    conn.commit()
+
+# DB 없으면 자동 생성
+if conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'").fetchone()[0] == 0:
+    with st.spinner("데이터 초기화 중... (최초 1회, 약 1분 소요)"):
+        init_db(conn)
+        
+        
+        
+
 # ──────────────────────────────────────────
 # 시스템 프롬프트 v2
 # ──────────────────────────────────────────
